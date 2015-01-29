@@ -11,10 +11,19 @@ includelib \masm32\lib\gdi32.lib
 
 WinMain proto :DWORD,:DWORD,:DWORD,:DWORD       ;main prototype
 
+RGB MACRO red, green, blue
+	xor eax, eax   ;clear eax
+	mov ah,blue
+	shl eax,8
+	mov ah,green
+	mov al,red
+endm
+
 .DATA                     
 ClassName db "Learn",0         
 AppName db "Window",0
 Text db "Friends, Romans, countrymen, lend me your ears I come to bury Caesar, not to praise him. The evil that men do lives after them",0        
+font db "script".0
 
 .DATA?                ; Uninitialized data 
 hInstance HINSTANCE ?         ; Instance Handle of Window DWORDsz
@@ -80,11 +89,26 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL hdc:HDC
     LOCAL ps:PAINTSTRUCT
     LOCAL rect:RECT
+    LOCAL hfont:HFONT
+
         .IF uMsg==WM_DESTROY                           ; if closing window
         invoke PostQuitMessage,NULL             ; quit application terminates while loop
         .ELSEIF uMsg==WM_PAINT
             invoke BeginPaint,hWnd, ADDR ps
             mov hdc,eax                         ;contains handle of device context
+            invoke CreateFont,24,16,0,0,400,0,0,0,OEM_CHARSET,\						/* nheight,nwidth,nescapement~wherenextcharisplaced,norientation,nweight																		
+            					OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,\			cItalic,cUnderline,cStrikeOut,cCharSet,cOutputPrecision
+            					DEFAULT_QUALITY,DEFAULT_PITCH or FF_SCRIPT,\		cClipPrecision,cQuality,cPitchAnddFamily,IpFacename */
+            					ADDR font
+            invoke SelectObject, hdc, eax
+            mov hfont,eax
+            RGB 200,200,50
+            invoke SetTextColor,hdc,eax
+            RGB 0,0,255
+            invoke SetBkColor,hdc,eax
+            invokeTextOut,hdc,0,0,ADDR Text, SIZEOF Test
+            invoke SelectObject,hdc,hfont
+
             invoke GetClientRect,hWnd, ADDR rect
             invoke DrawText, hdc, ADDR Text,-1, ADDR rect,\
             DT_CENTER or DT_SINGLELINE or DT_VCENTER

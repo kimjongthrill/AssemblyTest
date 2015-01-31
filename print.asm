@@ -22,8 +22,7 @@ endm
 .DATA                     
 ClassName db "Learn",0         
 AppName db "Window",0
-Text db "Friends, Romans, countrymen, lend me your ears I come to bury Caesar, not to praise him. The evil that men do lives after them",0        
-font db "script",0
+char WPARAM 20h
 
 .DATA?                ; Uninitialized data 
 hInstance HINSTANCE ?         ; Instance Handle of Window DWORDsz
@@ -35,7 +34,7 @@ invoke GetModuleHandle, NULL            ; get the instance handle (NULL paramete
 mov hInstance,eax                               ; GMH stored in eax
 invoke GetCommandLine                        ; get the command line.  
 mov CommandLine,eax 
-invoke WinMain, hInstance,NULL,CommandLine, SW_SHOWDEFAULT        ; call the main function (WinMain proc)
+invoke WinMain, hInstance,NULL,CommandLine,SW_SHOWDEFAULT        ; call the main function (WinMain proc)
 invoke ExitProcess, eax                           ; quit window. The exit code is returned in eax from WinMain.
 
 WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD 
@@ -88,26 +87,17 @@ WinMain endp
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM 
     LOCAL hdc:HDC
     LOCAL ps:PAINTSTRUCT
-    LOCAL hfont:HFONT
 
         .IF uMsg==WM_DESTROY                           ; if closing window
         invoke PostQuitMessage,NULL             ; quit application terminates while loop
+        .ELSEIF uMsg==WM_CHAR
+            push wParam
+            pop char
+            invoke InvalidateRect, hWnd,NULL,TRUE
         .ELSEIF uMsg==WM_PAINT
             invoke BeginPaint,hWnd, ADDR ps
             mov hdc,eax                         ;contains handle of device context
-            invoke CreateFont,24,16,0,0,400,0,0,0,OEM_CHARSET,\						;/* nheight,nwidth,nescapement~wherenextcharisplaced,norientation,nweight																		
-            					OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,\			;cItalic,cUnderline,cStrikeOut,cCharSet,cOutputPrecision
-            					DEFAULT_QUALITY,DEFAULT_PITCH or FF_SCRIPT,\		;cClipPrecision,cQuality,cPitchAnddFamily,IpFacename */
-            					ADDR font
-            invoke SelectObject, hdc, eax
-            mov hfont,eax
-            RGB 200,200,50
-            invoke SetTextColor,hdc,eax
-            RGB 0,0,255
-            invoke SetBkColor,hdc,eax
-            invoke TextOut,hdc,0,0,ADDR Text, SIZEOF Text
-            invoke SelectObject,hdc,hfont
-
+            invoke TextOut,hdc,0,0,ADDR char, 1
             invoke EndPaint,hWnd, ADDR ps 
         .ELSE
         invoke DefWindowProc,hWnd,uMsg,wParam,lParam     ; Default message processing 
